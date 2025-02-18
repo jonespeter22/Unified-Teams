@@ -1,25 +1,26 @@
-# For more information, please refer to https://aka.ms/vscode-docker-python
-FROM python:3-slim
+# Use official Python image
+FROM python:3.9
 
-EXPOSE 5002
+# Set a non-root user (10001 as an example)
+RUN useradd -m -u 10001 choreo-user
 
-# Keeps Python from generating .pyc files in the container
-ENV PYTHONDONTWRITEBYTECODE=1
-
-# Turns off buffering for easier container logging
-ENV PYTHONUNBUFFERED=1
-
-# Install pip requirements
-COPY requirements.txt .
-RUN python -m pip install -r requirements.txt
-
+# Set working directory
 WORKDIR /app
-COPY . /app
 
-# Creates a non-root user with an explicit UID and adds permission to access the /app folder
-# For more info, please refer to https://aka.ms/vscode-docker-python-configure-containers
-RUN adduser -u 5678 --disabled-password --gecos "" appuser && chown -R appuser /app
-USER appuser
+# Change ownership of the working directory
+RUN chown -R choreo-user /app
 
-# During debugging, this entry point will be overridden. For more information, please refer to https://aka.ms/vscode-docker-python-debug
-CMD ["gunicorn", "--bind", "0.0.0.0:5002", "app:app"]
+# Copy the project files
+COPY . .
+
+# Install dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Switch to the non-root user
+USER 10001
+
+# Expose the application port
+EXPOSE 5000
+
+# Start the application using Gunicorn
+CMD ["gunicorn", "-b", "0.0.0.0:5000", "app:app"]
